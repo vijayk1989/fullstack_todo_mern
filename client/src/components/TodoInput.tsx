@@ -61,7 +61,7 @@ const TodoInput: React.FC<IProps> = ({
   const onCancelEdit = () => {
     setIsEditing(false);
     setTodo('');
-    setPriority('');
+    setPriority('low');
   };
 
   return (

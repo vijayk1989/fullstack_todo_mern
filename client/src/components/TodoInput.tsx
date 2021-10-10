@@ -2,9 +2,25 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
 
-const TodoInput: React.FC = () => {
-  const [todo, setTodo] = useState<string>('');
-  const [priority, setPriority] = useState<string>('low');
+interface IProps {
+  todo: string;
+  setTodo: React.Dispatch<React.SetStateAction<string>>;
+  priority: string;
+  setPriority: React.Dispatch<React.SetStateAction<string>>;
+  isEditing: Boolean;
+  setIsEditing: React.Dispatch<React.SetStateAction<Boolean>>;
+  todoId: string;
+}
+
+const TodoInput: React.FC<IProps> = ({
+  todo,
+  setTodo,
+  priority,
+  setPriority,
+  isEditing,
+  setIsEditing,
+  todoId
+}: IProps) => {
   const queryClient = useQueryClient();
   const mutation = useMutation(
     'createTodo',
@@ -12,7 +28,20 @@ const TodoInput: React.FC = () => {
       axios.post('http://localhost:5000/api', newTodo),
     {
       onSuccess: () => {
-        queryClient.fetchQuery('todos');
+        queryClient.invalidateQueries('todos');
+        setTodo('');
+        setPriority('low');
+      }
+    }
+  );
+
+  const mutation2 = useMutation(
+    'createTodo',
+    (updatedTodo: { title: string; priority: string }) =>
+      axios.put(`http://localhost:5000/api/${todoId}`, updatedTodo),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('todos');
         setTodo('');
         setPriority('low');
       }
@@ -22,7 +51,17 @@ const TodoInput: React.FC = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Submitted Form');
-    mutation.mutate({ title: todo, priority: priority });
+    if (!isEditing) {
+      mutation.mutate({ title: todo, priority: priority });
+    } else {
+      mutation2.mutate({ title: todo, priority: priority });
+    }
+  };
+
+  const onCancelEdit = () => {
+    setIsEditing(false);
+    setTodo('');
+    setPriority('');
   };
 
   return (
@@ -61,8 +100,14 @@ const TodoInput: React.FC = () => {
         </div>
         <div className="m-2">
           <button type="submit" className="btn btn-primary">
-            Enter
+            {isEditing ? 'Edit' : 'Enter'}
           </button>
+          {isEditing && (
+            <button className="btn btn-primary mx-2" onClick={onCancelEdit}>
+              Cancel Edit
+              {console.log(todoId)}
+            </button>
+          )}
         </div>
       </form>
     </>
